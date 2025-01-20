@@ -1,6 +1,7 @@
 set(SOURCES
     ${SOURCE_DIR}/main.cpp
     ${SOURCE_DIR}/AppLogger.cpp
+    ${SOURCE_DIR}/Renderer.cpp
 )
 
 add_executable(SDRC ${SOURCES})
