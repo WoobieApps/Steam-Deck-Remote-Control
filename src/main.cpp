@@ -2,6 +2,8 @@
 #include "SDL_image.h"
 #include "SDL_ttf.h"
 #include "AppLogger.h"
+#include "Window.h"
+
 
 bool initApp();
 void closeApp();
@@ -9,7 +11,7 @@ void closeApp();
 int main(int argc, char* argv[])
 {
     initApp();
-
+    
     closeApp();
     return 0;
 }
@@ -45,4 +47,5 @@ void closeApp()
 {
     TTF_Quit();
     SDL_Quit();
+    LOG_INF("Application closed successfully.");
 }

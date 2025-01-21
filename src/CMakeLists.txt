@@ -1,7 +1,11 @@
 set(SOURCES
     ${SOURCE_DIR}/main.cpp
+    ${SOURCE_DIR}/App.cpp
     ${SOURCE_DIR}/AppLogger.cpp
+    ${SOURCE_DIR}/InputMgr.cpp
     ${SOURCE_DIR}/Renderer.cpp
+    ${SOURCE_DIR}/StateMgr.cpp
+    ${SOURCE_DIR}/Window.cpp
 )
 
 add_executable(SDRC ${SOURCES})
