@@ -1,4 +1,4 @@
-#include "AppLogger.h"
+#include "LogWrapper.h"
 #include "SDL_log.h"
 
 void LOG_INF(std::string log_text)

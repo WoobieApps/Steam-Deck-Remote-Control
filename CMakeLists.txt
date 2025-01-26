@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.27)
 
 project(SDRC)
+set (CMAKE_CXX_STANDARD 20)
 
 # Declare needed dirs
 set(INCLUDE_DIR "${CMAKE_SOURCE_DIR}/inc")

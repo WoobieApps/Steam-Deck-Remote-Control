@@ -1,8 +1,8 @@
 #include "SDL.h"
 #include "SDL_image.h"
 #include "SDL_ttf.h"
-#include "AppLogger.h"
-#include "Window.h"
+#include "LogWrapper.h"
+#include "App.h"
 
 
 bool initApp();
@@ -10,8 +10,12 @@ void closeApp();
 
 int main(int argc, char* argv[])
 {
+    // Test the app functioning
     initApp();
-    
+    {
+        App application = App();
+        SDL_Delay(2000);
+    }
     closeApp();
     return 0;
 }
@@ -39,7 +43,7 @@ bool initApp()
         SDL_Quit();
         return false;
     }
-    LOG_INF("Application initialized successfully.");
+    LOG_INF("Main: Dependencies initialized successfully.");
     return true;
 }
 
@@ -47,5 +51,5 @@ void closeApp()
 {
     TTF_Quit();
     SDL_Quit();
-    LOG_INF("Application closed successfully.");
+    LOG_INF("Main: Dependencies closed successfully.");
 }
