@@ -1,14 +1,16 @@
 #pragma once
 #include <optional>
 #include "App.h"
-#include "VisualMgr.h"
+#include "Visual.h"
 
 class App
 {
     private:
-        std::optional<VisualMgr::Window> mWindow;
+        // Using std::optional to delay the initialization since Window() can throw, we need to be able to handle that
+        std::optional<Visual::VisualMgr> mVisMgr;
 
     public:
         App();
         ~App();
+        void run();
 };

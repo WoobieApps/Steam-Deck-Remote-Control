@@ -4,7 +4,7 @@ set(SOURCES
     ${SOURCE_DIR}/InputMgr.cpp
     ${SOURCE_DIR}/LogWrapper.cpp
     ${SOURCE_DIR}/StateMgr.cpp
-    ${SOURCE_DIR}/VisualMgr.cpp
+    ${SOURCE_DIR}/Visual.cpp
 )
 
 add_executable(SDRC ${SOURCES})
