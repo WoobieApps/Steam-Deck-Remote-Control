@@ -14,6 +14,7 @@ int main(int argc, char* argv[])
     initApp();
     {
         App application = App();
+        application.run();
         SDL_Delay(2000);
     }
     closeApp();

@@ -3,8 +3,9 @@
 #include "Visual.h"
 #include "SDL_image.h"
 
-Visual::TextureWrapper::TextureWrapper(Visual::RendererPtr renderer, const std::string& path):
+Visual::TextureWrapper::TextureWrapper(Visual::RendererPtr& renderer, const std::string& path):
     mTexture(nullptr, SDL_DestroyTexture),
+    mPath(path),
     mWidth(Visual::kInitTextureWidth),
     mHeight(Visual::kInitTextureHeight)
 {
@@ -14,15 +15,15 @@ Visual::TextureWrapper::TextureWrapper(Visual::RendererPtr renderer, const std::
         THROW_EXCEPTION("Error when loading a texture");
     }
     mTexture.reset(texture);
-    LOG_INF(std::format("Texture loaded successfully."));
+    LOG_INF(std::format("Texture for path {} loaded successfully.", mPath));
 }
 
 Visual::TextureWrapper::~TextureWrapper()
 {
-    LOG_INF("Destroyed successfully.");
+    LOG_INF(std::format("Texture for path {} destroyed successfully.", mPath));
 }
 
-bool Visual::TextureWrapper::render(Visual::RendererPtr renderer, int position_x, int position_y, double rotation, SDL_Rect* pClip, \
+bool Visual::TextureWrapper::render(Visual::RendererPtr& renderer, int position_x, int position_y, double rotation, SDL_Rect* pClip, \
     SDL_RendererFlip flip, SDL_Rect* pViewportRect)
 {
     // We need to query the texture for its fields, since SDL implements SDL_Texture as incomplete type.
@@ -51,6 +52,8 @@ bool Visual::TextureWrapper::render(Visual::RendererPtr renderer, int position_x
     SDL_RenderCopyEx(renderer.get(), mTexture.get(), pClip, &renderRect, rotation, nullptr, flip);
     return true;
 }
+
+Visual::TextureID Visual::VisualMgr::mTextureCounter = 0U;
 
 Visual::VisualMgr::VisualMgr():
     mWindow(nullptr, SDL_DestroyWindow),
@@ -90,14 +93,20 @@ Visual::VisualMgr::~VisualMgr()
     LOG_INF("Destroyed successfully.");
 }
 
-// bool Visual::VisualMgr::loadTextureFromPng(std::string path)
-// {
-//     SDL_Texture* texture = IMG_LoadTexture(mRenderer, path.c_str());
-//     if(texture == nullptr) return false;
-//     Visual::TextureWrapper newTW = Visual::TextureWrapper(texture);
-//     mLoadedTextures.insert(std::make_pair(newTW.getID(), newTW));
-//     return true;
-// }
+bool Visual::VisualMgr::loadTextureFromPng(const std::string& path)
+{
+    try
+    {
+        std::unique_ptr<Visual::TextureWrapper> newTW = std::make_unique<Visual::TextureWrapper>(mRenderer, path);
+        mLoadedTextures[mTextureCounter] = std::move(newTW);
+        return true;
+    }
+    catch(const std::exception& exception)
+    {
+        LOG_SDL_ERR(exception.what());
+        return false;
+    }
+}
 
 // const Visual::TextureWrapper& Visual::VisualMgr::getTextureFromID(textureID_t id) const
 // {

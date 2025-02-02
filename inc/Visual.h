@@ -28,19 +28,20 @@ namespace Visual
     {
         private:
             TexturePtr mTexture;
+            const std::string mPath = "Unknown";
             int mWidth;
             int mHeight;
 
         public:
-            TextureWrapper(RendererPtr, const std::string&);
+            TextureWrapper(RendererPtr&, const std::string&);
             ~TextureWrapper();
             inline int getWidth() const {return mWidth;}
             inline int getHeight() const {return mHeight;}
-            bool render(RendererPtr, int, int, double rotation = 0.0, SDL_Rect* pClip = nullptr, \
+            bool render(RendererPtr&, int, int, double rotation = 0.0, SDL_Rect* pClip = nullptr, \
                 SDL_RendererFlip flip = SDL_FLIP_NONE, SDL_Rect* pViewportRect = nullptr);
     };
 
-    using TextureCollection = std::map<TextureID, TextureWrapper>;
+    using TextureCollection = std::map<TextureID, std::unique_ptr<TextureWrapper>>;
 
     class VisualMgr
     {
@@ -48,11 +49,12 @@ namespace Visual
             RendererPtr mRenderer;
             WindowPtr mWindow;
             TextureCollection mLoadedTextures;
+            static Visual::TextureID mTextureCounter;
 
         public:
             VisualMgr();
             ~VisualMgr();
-            bool loadTextureFromPng(std::string);
+            bool loadTextureFromPng(const std::string& path);
             bool renderTexture(TextureWrapper, int, int, double rotation = 0.0, \
                 SDL_Rect* pClip = nullptr, SDL_RendererFlip flip = SDL_FLIP_NONE, SDL_Rect* pViewportRect = nullptr);
     };

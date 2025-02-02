@@ -21,3 +21,8 @@ App::~App()
 {
     LOG_INF("Destroyed successfully.");
 }
+
+void App::run()
+{
+    mVisMgr->loadTextureFromPng("./media/example.png");
+}
