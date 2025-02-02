@@ -7,7 +7,7 @@ App::App()
     try
     {
         mVisMgr.emplace();
-        LOG_INF("App: Application initialized successfully.");
+        LOG_INF("Application initialized successfully.");
     }
     catch(const std::exception& exception)
     {
@@ -19,11 +19,5 @@ App::App()
 
 App::~App()
 {
-    LOG_INF("App: Destroyed successfully.");
-}
-
-void App::run()
-{
-    mVisMgr->loadTextureFromPng("./media/example.png");
-    mVisMgr->
+    LOG_INF("Destroyed successfully.");
 }

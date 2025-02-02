@@ -3,46 +3,33 @@
 #include "Visual.h"
 #include "SDL_image.h"
 
-uint32_t Visual::TextureWrapper::idCounter = 0U;
-
-Visual::TextureWrapper::TextureWrapper(SDL_Texture* texture)
+Visual::TextureWrapper::TextureWrapper(Visual::RendererPtr renderer, const std::string& path):
+    mTexture(nullptr, SDL_DestroyTexture),
+    mWidth(Visual::kInitTextureWidth),
+    mHeight(Visual::kInitTextureHeight)
 {
-    mTexture = texture;
-    LOG_INF("TextureWrapper: Initialized successfully.");
-}
-
-Visual::TextureWrapper::TextureWrapper(TextureWrapper&& other) noexcept
-{
-    mTexture = other.mTexture;
-    mWidth = other.mWidth;
-    mHeight = other.mHeight;
+    SDL_Texture* texture = IMG_LoadTexture(renderer.get(), path.c_str());
+    if(texture == nullptr)
+    {
+        THROW_EXCEPTION("Error when loading a texture");
+    }
+    mTexture.reset(texture);
+    LOG_INF(std::format("Texture loaded successfully."));
 }
 
 Visual::TextureWrapper::~TextureWrapper()
 {
-    freeTexture();
-    LOG_INF("TextureWrapper: Destroyed successfully.");
+    LOG_INF("Destroyed successfully.");
 }
 
-void Visual::TextureWrapper::freeTexture()
-{
-    if(mTexture != nullptr)
-    {
-        SDL_DestroyTexture(mTexture);
-        mTexture = nullptr;
-        mWidth = 0;
-        mHeight = 0;
-    }
-}
-
-bool Visual::TextureWrapper::render(SDL_Renderer* pRenderer, int position_x, int position_y, double rotation, SDL_Rect* pClip, \
+bool Visual::TextureWrapper::render(Visual::RendererPtr renderer, int position_x, int position_y, double rotation, SDL_Rect* pClip, \
     SDL_RendererFlip flip, SDL_Rect* pViewportRect)
 {
     // We need to query the texture for its fields, since SDL implements SDL_Texture as incomplete type.
     int textureWidth, textureHeight;
-    if(SDL_QueryTexture(mTexture, nullptr, nullptr, &textureWidth, &textureHeight) != 0)
+    if(SDL_QueryTexture(mTexture.get(), nullptr, nullptr, &textureWidth, &textureHeight) != 0)
     {
-        LOG_SDL_ERR("Renderer: Could not get Texture query.");
+        LOG_SDL_ERR("Could not get Texture query for render purpose.");
         return false;
     }
     SDL_Rect renderRect = {position_x, position_y, textureWidth, textureHeight};
@@ -50,7 +37,7 @@ bool Visual::TextureWrapper::render(SDL_Renderer* pRenderer, int position_x, int
     // Handle viewport if applicable
     if(pViewportRect == nullptr)
     {
-        SDL_RenderSetViewport(pRenderer, pViewportRect);
+        SDL_RenderSetViewport(renderer.get(), pViewportRect);
     }
 
     // Handle clipping if applicable
@@ -61,81 +48,76 @@ bool Visual::TextureWrapper::render(SDL_Renderer* pRenderer, int position_x, int
     }
 
     // Render final texture
-    SDL_RenderCopyEx(pRenderer, mTexture, pClip, &renderRect, rotation, nullptr, flip);
+    SDL_RenderCopyEx(renderer.get(), mTexture.get(), pClip, &renderRect, rotation, nullptr, flip);
     return true;
 }
 
-Visual::VisualMgr::VisualMgr()
+Visual::VisualMgr::VisualMgr():
+    mWindow(nullptr, SDL_DestroyWindow),
+    mRenderer(nullptr, SDL_DestroyRenderer)
 {
-    // Create a window
     uint8_t initTrials = 0U;
-    do
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+
+    // Create a window
+    while(initTrials < Visual::kWindowInitTrials)
     {
-        if(initTrials >= Visual::kWindowInitTrials)
-        {
-            // Throw since we could not initialize Window after 'kWindowInitTrials' tries.
-            throw std::runtime_error("SDL_Window alloc error");
-        }
-        mWindow = SDL_CreateWindow(Visual::kWindowTitleSV.data(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, \
+        window = SDL_CreateWindow(Visual::kWindowTitleSV.data(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, \
             Visual::kScreenWidth, Visual::kScreenHeight, SDL_WINDOW_SHOWN);
         initTrials++;
-    } while(mWindow == nullptr);
-    LOG_INF("Window: Initialized successfully.");
+        if(window != nullptr) break;
+    }
+    if(initTrials >= Visual::kWindowInitTrials) THROW_EXCEPTION("SDL_Window alloc error");
+    mWindow.reset(window);
+    LOG_INF("Window initialized successfully.");
 
     // Create a renderer for the window
     initTrials = 0U;
-    do
+    while(initTrials < Visual::kRendererAllocTrials)
     {
-        if(initTrials >= Visual::kRendererAllocTrials)
-        {
-            // Throw since we failed to initialize the renderer after 'kRenderAllocTrials' tries
-            throw std::runtime_error("SDL_Renderer alloc error");
-        }
-        mRenderer = SDL_CreateRenderer(mWindow, -1, SDL_RENDERER_ACCELERATED);
+        renderer = SDL_CreateRenderer(mWindow.get(), -1, SDL_RENDERER_ACCELERATED);
         initTrials++;
+        if(renderer != nullptr) break;
     }
-    while(mRenderer == nullptr);
-    LOG_INF("Renderer: Initialized successfully.");
+    if(initTrials >= Visual::kRendererAllocTrials) THROW_EXCEPTION("SDL_Renderer alloc error");
+    mRenderer.reset(renderer);
+    LOG_INF("Renderer Initialized successfully.");
 }
 
 Visual::VisualMgr::~VisualMgr()
 {
-    SDL_DestroyRenderer(mRenderer);
-    mRenderer = nullptr;
-    LOG_INF("Renderer: Destroyed successfully.");
-    SDL_DestroyWindow(mWindow);
-    mWindow = nullptr;
-    LOG_INF("Window: Destroyed successfully.");
+    LOG_INF("Destroyed successfully.");
 }
 
-bool Visual::VisualMgr::loadTextureFromPng(std::string path)
-{
-    SDL_Texture* texture = IMG_LoadTexture(mRenderer, path.c_str());
-    if(texture == nullptr) return false;
-    Visual::TextureWrapper newTW = Visual::TextureWrapper(texture);
-    mLoadedTextures.insert(std::make_pair(newTW.getID(), newTW));
-    return true;
-}
+// bool Visual::VisualMgr::loadTextureFromPng(std::string path)
+// {
+//     SDL_Texture* texture = IMG_LoadTexture(mRenderer, path.c_str());
+//     if(texture == nullptr) return false;
+//     Visual::TextureWrapper newTW = Visual::TextureWrapper(texture);
+//     mLoadedTextures.insert(std::make_pair(newTW.getID(), newTW));
+//     return true;
+// }
 
-const Visual::TextureWrapper& Visual::VisualMgr::getTextureFromID(textureID_t id) const
-{
-    auto it = mLoadedTextures.find(id);
-    if(it == mLoadedTextures.end())
-    {
-        throw std::runtime_error(std::format("Texture ID {} not found.", id));
-    }
-    return it->second;
-}
+// const Visual::TextureWrapper& Visual::VisualMgr::getTextureFromID(textureID_t id) const
+// {
+//     auto it = mLoadedTextures.find(id);
+//     if(it == mLoadedTextures.end())
+//     {
+//         throw std::runtime_error(std::format("Texture ID {} not found.", id));
+//     }
+//     return it->second;
+// }
 
-bool Visual::VisualMgr::renderTexture(TextureWrapper textureWrap, int position_x, int position_y, double rotation, \
-        SDL_Rect* pClip, SDL_RendererFlip flip, SDL_Rect* pViewportRect)
-{
-    return textureWrap.render(mRenderer, position_x, position_y, rotation, pClip, flip, pViewportRect);
-}
+// bool Visual::VisualMgr::renderTexture(TextureWrapper textureWrap, int position_x, int position_y, double rotation, \
+//         SDL_Rect* pClip, SDL_RendererFlip flip, SDL_Rect* pViewportRect)
+// {
+//     return textureWrap.render(mRenderer, position_x, position_y, rotation, pClip, flip, pViewportRect);
+// }
 
-bool Visual::VisualMgr::renderTexture(Visual::textureID_t textID, int position_x, int position_y, double rotation, \
-        SDL_Rect* pClip, SDL_RendererFlip flip, SDL_Rect* pViewportRect)
-{
-    Visual::TextureWrapper textureWrap = getTextureFromID(textID);
-    return textureWrap.render(mRenderer, position_x, position_y, rotation, pClip, flip, pViewportRect);
-}
+// bool Visual::VisualMgr::renderTexture(Visual::textureID_t textID, int position_x, int position_y, double rotation, \
+//         SDL_Rect* pClip, SDL_RendererFlip flip, SDL_Rect* pViewportRect)
+// {
+//     Visual::TextureWrapper textureWrap = getTextureFromID(textID);
+//     return textureWrap.render(mRenderer, position_x, position_y, rotation, pClip, flip, pViewportRect);
+// }
